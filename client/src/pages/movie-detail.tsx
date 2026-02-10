@@ -3,9 +3,10 @@ import { useRoute, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { MovieCard } from "@/components/movie-card";
+import type { TmdbMovie } from "@/components/movie-card";
 import {
   Play,
-  Download,
   Star,
   Clock,
   Globe,
@@ -16,15 +17,32 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Movie } from "@shared/schema";
+
+interface TmdbMovieFull {
+  id: number;
+  title: string;
+  overview: string;
+  posterUrl: string;
+  backdropUrl: string | null;
+  rating: string;
+  year: number;
+  genres: string;
+  duration: string;
+  language: string;
+  director: string | null;
+  cast: string | null;
+  trailerUrl: string | null;
+  quality: string;
+  similar: TmdbMovie[];
+}
 
 export default function MovieDetail() {
   const [, params] = useRoute("/movie/:id");
-  const movieId = params?.id;
+  const tmdbId = params?.id;
 
-  const { data: movie, isLoading } = useQuery<Movie>({
-    queryKey: ["/api/movies", movieId],
-    enabled: !!movieId,
+  const { data: movie, isLoading } = useQuery<TmdbMovieFull>({
+    queryKey: ["/api/tmdb/movie", tmdbId],
+    enabled: !!tmdbId,
   });
 
   if (isLoading) {
@@ -96,7 +114,7 @@ export default function MovieDetail() {
           <div className="space-y-5">
             <div>
               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <Badge variant="default">{movie.genre.split(",")[0]}</Badge>
+                <Badge variant="default">{movie.genres.split(",")[0]}</Badge>
                 <Badge variant="secondary">{movie.quality}</Badge>
                 <Badge variant="secondary">{movie.language}</Badge>
               </div>
@@ -128,7 +146,7 @@ export default function MovieDetail() {
             </div>
 
             <p className="text-muted-foreground leading-relaxed max-w-2xl" data-testid="text-detail-description">
-              {movie.description}
+              {movie.overview}
             </p>
 
             {movie.director && (
@@ -147,32 +165,15 @@ export default function MovieDetail() {
             )}
 
             <div className="flex items-center gap-3 pt-2 flex-wrap">
-              {movie.videoUrl ? (
-                <a href={movie.videoUrl} target="_blank" rel="noopener noreferrer">
-                  <Button size="lg" data-testid="button-watch">
-                    <Play className="w-4 h-4 mr-2" />
-                    Watch Now
-                  </Button>
-                </a>
-              ) : (
-                <Button size="lg" disabled data-testid="button-watch-disabled">
-                  <Play className="w-4 h-4 mr-2" />
-                  No Stream Available
-                </Button>
-              )}
-              {movie.videoUrl && (
-                <a href={movie.videoUrl} target="_blank" rel="noopener noreferrer" download>
-                  <Button size="lg" variant="outline" className="bg-white/5 border-white/15 text-white backdrop-blur-sm" data-testid="button-download">
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
-                  </Button>
-                </a>
-              )}
+              <Button size="lg" data-testid="button-watch">
+                <Play className="w-4 h-4 mr-2" />
+                Watch Now
+              </Button>
               {movie.trailerUrl && (
                 <a href={movie.trailerUrl} target="_blank" rel="noopener noreferrer">
-                  <Button size="lg" variant="ghost" className="text-muted-foreground" data-testid="button-trailer">
+                  <Button size="lg" variant="outline" className="bg-white/5 border-white/15 text-white backdrop-blur-sm" data-testid="button-trailer">
                     <ExternalLink className="w-4 h-4 mr-2" />
-                    Trailer
+                    Watch Trailer
                   </Button>
                 </a>
               )}
@@ -183,7 +184,7 @@ export default function MovieDetail() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground block">Genre</span>
-                  <span>{movie.genre}</span>
+                  <span>{movie.genres}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground block">Year</span>
@@ -209,6 +210,17 @@ export default function MovieDetail() {
             </Card>
           </div>
         </div>
+
+        {movie.similar && movie.similar.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-xl font-semibold tracking-tight mb-4">Similar Movies</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {movie.similar.filter(m => m.posterUrl).map((m) => (
+                <MovieCard key={m.id} movie={m} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="h-20" />

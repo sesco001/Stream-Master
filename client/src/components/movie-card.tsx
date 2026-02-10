@@ -1,9 +1,21 @@
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Star, Play } from "lucide-react";
-import type { Movie } from "@shared/schema";
 
-export function MovieCard({ movie }: { movie: Movie }) {
+export interface TmdbMovie {
+  id: number;
+  title: string;
+  overview: string;
+  posterUrl: string;
+  backdropUrl: string | null;
+  rating: number;
+  year: string;
+  genreIds: number[];
+}
+
+export function MovieCard({ movie }: { movie: TmdbMovie }) {
+  if (!movie.posterUrl) return null;
+
   return (
     <Link href={`/movie/${movie.id}`}>
       <div
@@ -15,6 +27,7 @@ export function MovieCard({ movie }: { movie: Movie }) {
             src={movie.posterUrl}
             alt={movie.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
             data-testid={`img-poster-${movie.id}`}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -25,7 +38,7 @@ export function MovieCard({ movie }: { movie: Movie }) {
           </div>
           <div className="absolute top-2 right-2">
             <Badge variant="secondary" className="text-xs bg-black/60 text-white border-0">
-              {movie.quality}
+              HD
             </Badge>
           </div>
         </div>
@@ -40,11 +53,10 @@ export function MovieCard({ movie }: { movie: Movie }) {
             <div className="flex items-center gap-1">
               <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
               <span className="text-xs text-muted-foreground" data-testid={`text-rating-${movie.id}`}>
-                {movie.rating}
+                {Number(movie.rating).toFixed(1)}
               </span>
             </div>
             <span className="text-xs text-muted-foreground">{movie.year}</span>
-            <span className="text-xs text-muted-foreground">{movie.genre.split(",")[0]}</span>
           </div>
         </div>
       </div>

@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, Download, Star, Clock, Globe } from "lucide-react";
+import { Play, Info, Star, Clock } from "lucide-react";
 import { Link } from "wouter";
-import type { Movie } from "@shared/schema";
+import type { TmdbMovie } from "@/components/movie-card";
 
 interface HeroSectionProps {
-  movie?: Movie;
+  movie?: TmdbMovie;
   isLoading?: boolean;
 }
 
@@ -22,7 +22,7 @@ export function HeroSection({ movie, isLoading }: HeroSectionProps) {
       data-testid="section-hero"
     >
       <img
-        src={movie.backdropUrl || "/images/hero-bg.png"}
+        src={movie.backdropUrl || movie.posterUrl}
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
       />
@@ -33,10 +33,10 @@ export function HeroSection({ movie, isLoading }: HeroSectionProps) {
         <div className="max-w-2xl space-y-5">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="default" className="text-xs">
-              Featured
+              Trending
             </Badge>
             <Badge variant="secondary" className="text-xs bg-white/10 border-0 text-white">
-              {movie.quality}
+              HD
             </Badge>
           </div>
 
@@ -50,21 +50,13 @@ export function HeroSection({ movie, isLoading }: HeroSectionProps) {
           <div className="flex items-center gap-4 text-sm text-gray-300 flex-wrap">
             <span className="flex items-center gap-1">
               <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-              {movie.rating}
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              {movie.duration}
+              {Number(movie.rating).toFixed(1)}
             </span>
             <span>{movie.year}</span>
-            <span className="flex items-center gap-1">
-              <Globe className="w-4 h-4" />
-              {movie.language}
-            </span>
           </div>
 
           <p className="text-gray-300 text-base md:text-lg leading-relaxed line-clamp-3 max-w-xl">
-            {movie.description}
+            {movie.overview}
           </p>
 
           <div className="flex items-center gap-3 pt-2 flex-wrap">
@@ -76,8 +68,8 @@ export function HeroSection({ movie, isLoading }: HeroSectionProps) {
             </Link>
             <Link href={`/movie/${movie.id}`}>
               <Button size="lg" variant="outline" className="bg-white/10 border-white/20 text-white backdrop-blur-sm" data-testid="button-hero-details">
-                <Download className="w-4 h-4 mr-2" />
-                Download
+                <Info className="w-4 h-4 mr-2" />
+                More Info
               </Button>
             </Link>
           </div>

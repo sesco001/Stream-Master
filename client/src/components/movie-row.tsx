@@ -1,11 +1,11 @@
 import { MovieCard, MovieCardSkeleton } from "@/components/movie-card";
+import type { TmdbMovie } from "@/components/movie-card";
 import { ChevronRight } from "lucide-react";
 import { Link } from "wouter";
-import type { Movie } from "@shared/schema";
 
 interface MovieRowProps {
   title: string;
-  movies: Movie[];
+  movies: TmdbMovie[];
   isLoading?: boolean;
   viewAllHref?: string;
 }
