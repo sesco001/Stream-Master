@@ -52,7 +52,7 @@ export default function Browse() {
 
   const years = useMemo(() => {
     if (!movies) return [];
-    return [...new Set(movies.map((m) => m.year.toString()))].sort((a, b) => Number(b) - Number(a));
+    return Array.from(new Set(movies.map((m) => m.year.toString()))).sort((a, b) => Number(b) - Number(a));
   }, [movies]);
 
   return (

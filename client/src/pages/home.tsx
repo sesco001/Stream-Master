@@ -15,7 +15,7 @@ export default function Home() {
   const featuredMovie = featured?.[0];
 
   const genres = movies
-    ? [...new Set(movies.flatMap((m) => m.genre.split(",").map((g) => g.trim())))]
+    ? Array.from(new Set(movies.flatMap((m) => m.genre.split(",").map((g) => g.trim()))))
     : [];
 
   const getMoviesByGenre = (genre: string) =>
