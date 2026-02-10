@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertMovieSchema } from "@shared/schema";
+import { searchTmdbMovies, fetchMovieDetails } from "./tmdb";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -91,6 +92,38 @@ export async function registerRoutes(
       res.json({ message: "Movie deleted" });
     } catch (err) {
       res.status(500).json({ message: "Failed to delete movie" });
+    }
+  });
+
+  app.get("/api/tmdb/search", async (req, res) => {
+    try {
+      const query = (req.query.q as string) || "";
+      if (!query) return res.json([]);
+      const results = await searchTmdbMovies(query);
+      res.json(results);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to search TMDB" });
+    }
+  });
+
+  app.post("/api/tmdb/import/:tmdbId", async (req, res) => {
+    try {
+      const tmdbId = parseInt(req.params.tmdbId);
+      if (isNaN(tmdbId)) {
+        return res.status(400).json({ message: "Invalid TMDB ID" });
+      }
+
+      const existing = await storage.getMovieByTmdbId(tmdbId);
+      if (existing) {
+        return res.status(409).json({ message: "Movie already imported", movie: existing });
+      }
+
+      const movieData = await fetchMovieDetails(tmdbId);
+      const movie = await storage.createMovie(movieData);
+      res.status(201).json(movie);
+    } catch (err) {
+      console.error("TMDB import error:", err);
+      res.status(500).json({ message: "Failed to import movie from TMDB" });
     }
   });
 

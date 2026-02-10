@@ -1,10 +1,11 @@
 import { type Movie, type InsertMovie, movies } from "@shared/schema";
 import { db } from "./db";
-import { eq, ilike, desc, and } from "drizzle-orm";
+import { eq, ilike, desc } from "drizzle-orm";
 
 export interface IStorage {
   getAllMovies(): Promise<Movie[]>;
   getMovieById(id: string): Promise<Movie | undefined>;
+  getMovieByTmdbId(tmdbId: number): Promise<Movie | undefined>;
   getFeaturedMovies(): Promise<Movie[]>;
   searchMovies(query: string): Promise<Movie[]>;
   createMovie(movie: InsertMovie): Promise<Movie>;
@@ -19,6 +20,11 @@ export class DatabaseStorage implements IStorage {
 
   async getMovieById(id: string): Promise<Movie | undefined> {
     const [movie] = await db.select().from(movies).where(eq(movies.id, id));
+    return movie;
+  }
+
+  async getMovieByTmdbId(tmdbId: number): Promise<Movie | undefined> {
+    const [movie] = await db.select().from(movies).where(eq(movies.tmdbId, tmdbId));
     return movie;
   }
 

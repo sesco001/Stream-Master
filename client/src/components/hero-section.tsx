@@ -22,7 +22,7 @@ export function HeroSection({ movie, isLoading }: HeroSectionProps) {
       data-testid="section-hero"
     >
       <img
-        src="/images/hero-bg.png"
+        src={movie.backdropUrl || "/images/hero-bg.png"}
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
       />

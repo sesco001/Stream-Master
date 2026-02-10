@@ -5,6 +5,7 @@ import { z } from "zod";
 
 export const movies = pgTable("movies", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tmdbId: integer("tmdb_id").unique(),
   title: text("title").notNull(),
   description: text("description").notNull(),
   genre: text("genre").notNull(),
@@ -12,6 +13,7 @@ export const movies = pgTable("movies", {
   rating: text("rating").notNull().default("0"),
   duration: text("duration").notNull(),
   posterUrl: text("poster_url").notNull(),
+  backdropUrl: text("backdrop_url"),
   videoUrl: text("video_url"),
   trailerUrl: text("trailer_url"),
   quality: text("quality").notNull().default("HD"),

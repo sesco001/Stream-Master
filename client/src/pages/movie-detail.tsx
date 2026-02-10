@@ -65,9 +65,9 @@ export default function MovieDetail() {
     <div className="min-h-screen" data-testid="page-movie-detail">
       <div className="relative w-full h-[50vh] min-h-[400px]">
         <img
-          src={movie.posterUrl}
+          src={movie.backdropUrl || movie.posterUrl}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover blur-sm scale-105"
+          className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-background" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
