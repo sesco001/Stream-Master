@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { MovieCard } from "@/components/movie-card";
 import type { TmdbMovie } from "@/components/movie-card";
+import { VideoPlayerModal } from "@/components/video-player-modal";
 import {
   Play,
   Star,
@@ -14,7 +16,7 @@ import {
   User,
   Users,
   ArrowLeft,
-  ExternalLink,
+  Film,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -31,7 +33,7 @@ interface TmdbMovieFull {
   language: string;
   director: string | null;
   cast: string | null;
-  trailerUrl: string | null;
+  trailerKey: string | null;
   quality: string;
   similar: TmdbMovie[];
 }
@@ -39,6 +41,8 @@ interface TmdbMovieFull {
 export default function MovieDetail() {
   const [, params] = useRoute("/movie/:id");
   const tmdbId = params?.id;
+  const [showPlayer, setShowPlayer] = useState(false);
+  const [playerMode, setPlayerMode] = useState<"watch" | "trailer">("watch");
 
   const { data: movie, isLoading } = useQuery<TmdbMovieFull>({
     queryKey: ["/api/tmdb/movie", tmdbId],
@@ -165,17 +169,33 @@ export default function MovieDetail() {
             )}
 
             <div className="flex items-center gap-3 pt-2 flex-wrap">
-              <Button size="lg" data-testid="button-watch">
-                <Play className="w-4 h-4 mr-2" />
-                Watch Now
-              </Button>
-              {movie.trailerUrl && (
-                <a href={movie.trailerUrl} target="_blank" rel="noopener noreferrer">
-                  <Button size="lg" variant="outline" className="bg-white/5 border-white/15 text-white backdrop-blur-sm" data-testid="button-trailer">
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Watch Trailer
-                  </Button>
-                </a>
+              {movie.trailerKey && (
+                <Button
+                  size="lg"
+                  data-testid="button-watch"
+                  onClick={() => {
+                    setPlayerMode("watch");
+                    setShowPlayer(true);
+                  }}
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Watch Now
+                </Button>
+              )}
+              {movie.trailerKey && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="bg-white/5 border-white/15 text-white backdrop-blur-sm"
+                  data-testid="button-trailer"
+                  onClick={() => {
+                    setPlayerMode("trailer");
+                    setShowPlayer(true);
+                  }}
+                >
+                  <Film className="w-4 h-4 mr-2" />
+                  Watch Trailer
+                </Button>
               )}
             </div>
 
@@ -224,6 +244,14 @@ export default function MovieDetail() {
       </div>
 
       <div className="h-20" />
+
+      {showPlayer && movie?.trailerKey && (
+        <VideoPlayerModal
+          youtubeKey={movie.trailerKey}
+          title={playerMode === "trailer" ? `${movie.title} - Trailer` : movie.title}
+          onClose={() => setShowPlayer(false)}
+        />
+      )}
     </div>
   );
 }

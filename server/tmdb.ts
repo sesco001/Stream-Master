@@ -62,7 +62,7 @@ export interface TmdbMovieFull {
   language: string;
   director: string | null;
   cast: string | null;
-  trailerUrl: string | null;
+  trailerKey: string | null;
   quality: string;
   similar: TmdbMovieBrief[];
 }
@@ -155,7 +155,7 @@ export async function getMovieDetail(tmdbId: number): Promise<TmdbMovieFull> {
   const trailer = (data.videos?.results || []).find(
     (v: any) => v.type === "Trailer" && v.site === "YouTube"
   );
-  const trailerUrl = trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null;
+  const trailerKey = trailer ? trailer.key : null;
 
   const similar = (data.similar?.results || []).slice(0, 12).map(mapBrief);
 
@@ -172,7 +172,7 @@ export async function getMovieDetail(tmdbId: number): Promise<TmdbMovieFull> {
     language: mapLanguage(data.original_language || "en"),
     director: directors || null,
     cast: castList || null,
-    trailerUrl,
+    trailerKey,
     quality: "HD",
     similar,
   };
