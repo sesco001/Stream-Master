@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertMovieSchema } from "@shared/schema";
+import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import {
   searchTmdbMovies,
   fetchMovieDetails,
@@ -20,6 +21,8 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  await setupAuth(app);
+  registerAuthRoutes(app);
 
   app.get("/api/tmdb/trending", async (req, res) => {
     try {
@@ -217,6 +220,100 @@ export async function registerRoutes(
       res.json({ message: "Movie deleted" });
     } catch (err) {
       res.status(500).json({ message: "Failed to delete movie" });
+    }
+  });
+
+  app.get("/api/watchlist", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const list = await storage.getWatchlist(userId);
+      res.json(list);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch watchlist" });
+    }
+  });
+
+  app.get("/api/watchlist/check/:tmdbId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const tmdbId = parseInt(req.params.tmdbId);
+      const inList = await storage.isInWatchlist(userId, tmdbId);
+      res.json({ inWatchlist: inList });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to check watchlist" });
+    }
+  });
+
+  app.post("/api/watchlist", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tmdbId, title, posterUrl, rating, year } = req.body;
+      const existing = await storage.isInWatchlist(userId, tmdbId);
+      if (existing) {
+        return res.status(409).json({ message: "Already in watchlist" });
+      }
+      const item = await storage.addToWatchlist({ userId, tmdbId, title, posterUrl, rating, year });
+      res.status(201).json(item);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to add to watchlist" });
+    }
+  });
+
+  app.delete("/api/watchlist/:tmdbId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const tmdbId = parseInt(req.params.tmdbId);
+      await storage.removeFromWatchlist(userId, tmdbId);
+      res.json({ message: "Removed from watchlist" });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to remove from watchlist" });
+    }
+  });
+
+  app.get("/api/downloads", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const list = await storage.getDownloads(userId);
+      res.json(list);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch downloads" });
+    }
+  });
+
+  app.get("/api/downloads/check/:tmdbId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const tmdbId = parseInt(req.params.tmdbId);
+      const downloaded = await storage.isDownloaded(userId, tmdbId);
+      res.json({ isDownloaded: downloaded });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to check downloads" });
+    }
+  });
+
+  app.post("/api/downloads", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tmdbId, title, posterUrl, rating, year, quality } = req.body;
+      const existing = await storage.isDownloaded(userId, tmdbId);
+      if (existing) {
+        return res.status(409).json({ message: "Already downloaded" });
+      }
+      const item = await storage.addDownload({ userId, tmdbId, title, posterUrl, rating, year, quality });
+      res.status(201).json(item);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to add download" });
+    }
+  });
+
+  app.delete("/api/downloads/:tmdbId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const tmdbId = parseInt(req.params.tmdbId);
+      await storage.removeDownload(userId, tmdbId);
+      res.json({ message: "Removed from downloads" });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to remove download" });
     }
   });
 

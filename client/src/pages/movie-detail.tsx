@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,9 @@ import { Card } from "@/components/ui/card";
 import { MovieCard } from "@/components/movie-card";
 import type { TmdbMovie } from "@/components/movie-card";
 import { VideoPlayerModal } from "@/components/video-player-modal";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import {
   Play,
   Star,
@@ -17,6 +20,9 @@ import {
   Users,
   ArrowLeft,
   Film,
+  Heart,
+  Download,
+  Check,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -43,11 +49,74 @@ export default function MovieDetail() {
   const tmdbId = params?.id;
   const [showPlayer, setShowPlayer] = useState(false);
   const [playerMode, setPlayerMode] = useState<"watch" | "trailer">("watch");
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
   const { data: movie, isLoading } = useQuery<TmdbMovieFull>({
     queryKey: ["/api/tmdb/movie", tmdbId],
     enabled: !!tmdbId,
   });
+
+  const { data: watchlistStatus } = useQuery<{ inWatchlist: boolean }>({
+    queryKey: ["/api/watchlist/check", tmdbId],
+    enabled: !!tmdbId && isAuthenticated,
+  });
+
+  const { data: downloadStatus } = useQuery<{ isDownloaded: boolean }>({
+    queryKey: ["/api/downloads/check", tmdbId],
+    enabled: !!tmdbId && isAuthenticated,
+  });
+
+  const addToWatchlist = useMutation({
+    mutationFn: async () => {
+      if (!movie) return;
+      await apiRequest("POST", "/api/watchlist", {
+        tmdbId: movie.id,
+        title: movie.title,
+        posterUrl: movie.posterUrl,
+        rating: movie.rating,
+        year: String(movie.year),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/watchlist/check", tmdbId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/watchlist"] });
+      toast({ title: "Added to My List" });
+    },
+  });
+
+  const removeFromWatchlist = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/watchlist/${tmdbId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/watchlist/check", tmdbId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/watchlist"] });
+      toast({ title: "Removed from My List" });
+    },
+  });
+
+  const addDownload = useMutation({
+    mutationFn: async () => {
+      if (!movie) return;
+      await apiRequest("POST", "/api/downloads", {
+        tmdbId: movie.id,
+        title: movie.title,
+        posterUrl: movie.posterUrl,
+        rating: movie.rating,
+        year: String(movie.year),
+        quality: movie.quality,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/downloads/check", tmdbId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/downloads"] });
+      toast({ title: "Download started", description: "Movie added to your downloads" });
+    },
+  });
+
+  const inWatchlist = watchlistStatus?.inWatchlist || false;
+  const isDownloaded = downloadStatus?.isDownloaded || false;
 
   if (isLoading) {
     return (
@@ -196,6 +265,32 @@ export default function MovieDetail() {
                   <Film className="w-4 h-4 mr-2" />
                   Watch Trailer
                 </Button>
+              )}
+              {isAuthenticated && (
+                <>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className={`backdrop-blur-sm ${inWatchlist ? "bg-primary/20 border-primary/40 text-primary" : "bg-white/5 border-white/15 text-white"}`}
+                    data-testid="button-add-watchlist"
+                    onClick={() => inWatchlist ? removeFromWatchlist.mutate() : addToWatchlist.mutate()}
+                    disabled={addToWatchlist.isPending || removeFromWatchlist.isPending}
+                  >
+                    {inWatchlist ? <Check className="w-4 h-4 mr-2" /> : <Heart className="w-4 h-4 mr-2" />}
+                    {inWatchlist ? "In My List" : "My List"}
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className={`backdrop-blur-sm ${isDownloaded ? "bg-green-500/20 border-green-500/40 text-green-400" : "bg-white/5 border-white/15 text-white"}`}
+                    data-testid="button-download"
+                    onClick={() => !isDownloaded && addDownload.mutate()}
+                    disabled={addDownload.isPending || isDownloaded}
+                  >
+                    {isDownloaded ? <Check className="w-4 h-4 mr-2" /> : <Download className="w-4 h-4 mr-2" />}
+                    {isDownloaded ? "Downloaded" : "Download"}
+                  </Button>
+                </>
               )}
             </div>
 

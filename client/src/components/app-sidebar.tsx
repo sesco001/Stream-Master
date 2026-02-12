@@ -1,5 +1,5 @@
 import { useLocation, Link } from "wouter";
-import { Home, Film, Shield, Search } from "lucide-react";
+import { Home, Search, Shield, Heart, Download, Film } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +15,11 @@ import {
 const menuItems = [
   { title: "Home", href: "/", icon: Home },
   { title: "Browse", href: "/browse", icon: Search },
+  { title: "My List", href: "/my-list", icon: Heart },
+  { title: "Downloads", href: "/downloads", icon: Download },
+];
+
+const adminItems = [
   { title: "Admin", href: "/admin", icon: Shield },
 ];
 
@@ -33,7 +38,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
@@ -45,6 +50,26 @@ export function AppSidebar() {
                         ? location === "/"
                         : location.startsWith(item.href)
                     }
+                  >
+                    <Link href={item.href}>
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Manage</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {adminItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.startsWith(item.href)}
                   >
                     <Link href={item.href}>
                       <item.icon className="w-4 h-4" />
