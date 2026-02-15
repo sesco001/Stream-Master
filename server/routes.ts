@@ -306,6 +306,54 @@ export async function registerRoutes(
     }
   });
 
+  const xcasperHeaders = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://movieapi.xcasper.space/",
+    "Origin": "https://movieapi.xcasper.space",
+  };
+
+  app.get("/api/stream/search", async (req, res) => {
+    try {
+      const keyword = req.query.keyword as string;
+      const type = (req.query.type as string) || "movie";
+      if (!keyword) return res.status(400).json({ message: "keyword is required" });
+      const response = await fetch(
+        `https://movieapi.xcasper.space/api/showbox/search?keyword=${encodeURIComponent(keyword)}&type=${encodeURIComponent(type)}`,
+        { headers: xcasperHeaders }
+      );
+      if (!response.ok) {
+        return res.status(502).json({ message: "Streaming service unavailable", success: false });
+      }
+      const data = await response.json();
+      res.json(data);
+    } catch (err) {
+      console.error("Stream search error:", err);
+      res.status(500).json({ message: "Failed to search for streams" });
+    }
+  });
+
+  app.get("/api/stream/links", async (req, res) => {
+    try {
+      const id = req.query.id as string;
+      const type = (req.query.type as string) || "movie";
+      if (!id) return res.status(400).json({ message: "id is required" });
+      const response = await fetch(
+        `https://movieapi.xcasper.space/api/stream?id=${encodeURIComponent(id)}&type=${encodeURIComponent(type)}`,
+        { headers: xcasperHeaders }
+      );
+      if (!response.ok) {
+        return res.status(502).json({ message: "Streaming service unavailable", success: false });
+      }
+      const data = await response.json();
+      res.json(data);
+    } catch (err) {
+      console.error("Stream links error:", err);
+      res.status(500).json({ message: "Failed to fetch stream links" });
+    }
+  });
+
   app.delete("/api/downloads/:tmdbId", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

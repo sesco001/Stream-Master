@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import {
   Heart,
   Download,
   Check,
+  Loader2,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -44,11 +45,19 @@ interface TmdbMovieFull {
   similar: TmdbMovie[];
 }
 
+interface StreamLink {
+  provider: string;
+  url: string;
+  quality: string;
+}
+
 export default function MovieDetail() {
   const [, params] = useRoute("/movie/:id");
   const tmdbId = params?.id;
   const [showPlayer, setShowPlayer] = useState(false);
   const [playerMode, setPlayerMode] = useState<"watch" | "trailer">("watch");
+  const [streamLinks, setStreamLinks] = useState<StreamLink[]>([]);
+  const [streamLoading, setStreamLoading] = useState(false);
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
 
@@ -66,6 +75,49 @@ export default function MovieDetail() {
     queryKey: ["/api/downloads/check", tmdbId],
     enabled: !!tmdbId && isAuthenticated,
   });
+
+  const fetchStreamLinks = useCallback(async () => {
+    if (!movie) return;
+    setStreamLoading(true);
+    try {
+      const searchRes = await fetch(`/api/stream/search?keyword=${encodeURIComponent(movie.title)}&type=movie`);
+      if (!searchRes.ok) throw new Error("Search failed");
+      const searchData = await searchRes.json();
+      if (searchData.success && searchData.data && searchData.data.length > 0) {
+        const match = searchData.data.find((m: any) =>
+          m.title.toLowerCase() === movie.title.toLowerCase() ||
+          (m.year && Math.abs(m.year - movie.year) <= 1)
+        ) || searchData.data[0];
+        const linksRes = await fetch(`/api/stream/links?id=${match.id}&type=movie`);
+        if (!linksRes.ok) throw new Error("Links failed");
+        const linksData = await linksRes.json();
+        if (linksData.success && linksData.data?.links?.length > 0) {
+          setStreamLinks(linksData.data.links);
+          setPlayerMode("watch");
+          setShowPlayer(true);
+          return;
+        }
+      }
+      if (movie.trailerKey) {
+        setPlayerMode("trailer");
+        setShowPlayer(true);
+        toast({ title: "Playing trailer", description: "Full movie stream not available, showing trailer instead" });
+      } else {
+        toast({ title: "Not available", description: "No streaming source found for this movie", variant: "destructive" });
+      }
+    } catch (err) {
+      console.error("Stream fetch error:", err);
+      if (movie.trailerKey) {
+        setPlayerMode("trailer");
+        setShowPlayer(true);
+        toast({ title: "Playing trailer", description: "Stream service unavailable, showing trailer" });
+      } else {
+        toast({ title: "Error", description: "Failed to fetch streaming links", variant: "destructive" });
+      }
+    } finally {
+      setStreamLoading(false);
+    }
+  }, [movie, toast]);
 
   const addToWatchlist = useMutation({
     mutationFn: async () => {
@@ -238,19 +290,19 @@ export default function MovieDetail() {
             )}
 
             <div className="flex items-center gap-3 pt-2 flex-wrap">
-              {movie.trailerKey && (
-                <Button
-                  size="lg"
-                  data-testid="button-watch"
-                  onClick={() => {
-                    setPlayerMode("watch");
-                    setShowPlayer(true);
-                  }}
-                >
+              <Button
+                size="lg"
+                data-testid="button-watch"
+                onClick={fetchStreamLinks}
+                disabled={streamLoading}
+              >
+                {streamLoading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
                   <Play className="w-4 h-4 mr-2" />
-                  Watch Now
-                </Button>
-              )}
+                )}
+                {streamLoading ? "Loading..." : "Watch Now"}
+              </Button>
               {movie.trailerKey && (
                 <Button
                   size="lg"
@@ -258,6 +310,7 @@ export default function MovieDetail() {
                   className="bg-white/5 border-white/15 text-white backdrop-blur-sm"
                   data-testid="button-trailer"
                   onClick={() => {
+                    setStreamLinks([]);
                     setPlayerMode("trailer");
                     setShowPlayer(true);
                   }}
@@ -340,11 +393,15 @@ export default function MovieDetail() {
 
       <div className="h-20" />
 
-      {showPlayer && movie?.trailerKey && (
+      {showPlayer && (
         <VideoPlayerModal
-          youtubeKey={movie.trailerKey}
+          youtubeKey={playerMode === "trailer" || streamLinks.length === 0 ? movie.trailerKey || undefined : undefined}
+          streamLinks={streamLinks.length > 0 && playerMode === "watch" ? streamLinks : undefined}
           title={playerMode === "trailer" ? `${movie.title} - Trailer` : movie.title}
-          onClose={() => setShowPlayer(false)}
+          onClose={() => {
+            setShowPlayer(false);
+            setStreamLinks([]);
+          }}
         />
       )}
     </div>

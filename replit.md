@@ -4,6 +4,7 @@
 A Netflix-like movie streaming and downloading platform powered by TMDB (The Movie Database) API. Users sign in to access hundreds of thousands of real movies, build watchlists, download favorites, and watch trailers inline. Features user authentication via Replit Auth.
 
 ## Recent Changes
+- 2026-02-15: XCASPER streaming integration - Real movie streaming via XCASPER Movies API (multi-provider embeds), updated video player with source switching
 - 2026-02-12: Netflix upgrade - User auth, landing page, watchlist, downloads, embedded video player, user profiles
 - 2026-02-10: Major upgrade - Live TMDB integration for all pages (home, browse, detail), genre filtering, pagination, similar movies
 - 2026-02-10: Initial build - Schema, dark cinema theme, full frontend and backend
@@ -12,7 +13,7 @@ A Netflix-like movie streaming and downloading platform powered by TMDB (The Mov
 - Frontend: React + Vite + TanStack Query + wouter + shadcn/ui + Tailwind CSS
 - Backend: Express + PostgreSQL + Drizzle ORM
 - Auth: Replit Auth (OpenID Connect) with passport
-- External API: TMDB (The Movie Database) for live movie data
+- External APIs: TMDB (movie metadata), XCASPER Movies API (streaming embeds, no key required)
 - Theme: Dark cinema theme with purple accents
 
 ## Project Architecture
@@ -54,6 +55,10 @@ A Netflix-like movie streaming and downloading platform powered by TMDB (The Mov
 - GET `/api/downloads/check/:tmdbId` - Check if movie is downloaded
 - POST `/api/downloads` - Add download
 - DELETE `/api/downloads/:tmdbId` - Remove download
+
+### Streaming (XCASPER proxy)
+- GET `/api/stream/search?keyword=&type=movie` - Search XCASPER ShowBox for streaming sources
+- GET `/api/stream/links?id=&type=movie` - Get embed streaming links (VidSrc, MultiEmbed, AutoEmbed, etc.)
 
 ### Local Catalog Endpoints
 - GET `/api/movies` - List all local catalog movies
